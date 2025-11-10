@@ -1,0 +1,297 @@
+================================================================================
+     SISTEMA DE BIBLIOTECA - GUIA RÁPIDO DE INSTALAÇÃO
+     Módulo 5 - Banco de Dados II
+================================================================================
+
+📋 REQUISITOS:
+--------------
+- XAMPP, WAMP ou LAMP instalado
+- PHP 7.4 ou superior
+- MySQL 5.7 ou superior
+- Navegador web atualizado
+
+================================================================================
+
+🚀 PASSO A PASSO DA INSTALAÇÃO:
+--------------------------------
+
+1️⃣ PREPARAR OS ARQUIVOS
+   - Baixe/extraia todos os arquivos do projeto
+   - Copie a pasta "biblioteca" para:
+     • Windows (XAMPP): C:\xampp\htdocs\biblioteca
+     • Windows (WAMP): C:\wamp64\www\biblioteca  
+     • Linux: /var/www/html/biblioteca
+
+2️⃣ INICIAR OS SERVIÇOS
+   - Abra o XAMPP/WAMP Control Panel
+   - Inicie o Apache
+   - Inicie o MySQL
+   - Aguarde até os serviços ficarem verdes
+
+3️⃣ CRIAR O BANCO DE DADOS
+   
+   OPÇÃO A - Via phpMyAdmin (Mais Fácil):
+   
+   a) Abra o navegador
+   b) Acesse: http://localhost/phpmyadmin
+   c) Clique em "Novo" ou "New" no menu lateral esquerdo
+   d) Digite "biblioteca" como nome do banco
+   e) Escolha "utf8mb4_unicode_ci" como collation
+   f) Clique em "Criar"
+   g) Com o banco selecionado, clique na aba "SQL"
+   h) Abra o arquivo "database.sql" com um editor de texto
+   i) Copie TODO o conteúdo do arquivo
+   j) Cole na área de texto do phpMyAdmin
+   k) Clique em "Executar" ou "Go"
+   l) Aguarde a mensagem de sucesso
+   
+   OPÇÃO B - Via Linha de Comando:
+   
+   a) Abra o terminal/prompt de comando
+   b) Navegue até a pasta do projeto
+   c) Execute: mysql -u root -p < database.sql
+   d) Digite sua senha do MySQL (se houver)
+
+4️⃣ VERIFICAR A CONEXÃO
+   - Abra o arquivo: config/database.php
+   - Verifique se as configurações estão corretas:
+     
+     private $host = "localhost";     ✓ Geralmente não precisa mudar
+     private $db = "biblioteca";      ✓ Nome do banco que você criou
+     private $user = "root";          ✓ Usuário padrão do MySQL
+     private $pass = "";              ⚠️ IMPORTANTE: Coloque sua senha aqui (se houver)
+
+5️⃣ TESTAR O SISTEMA
+   - Abra o navegador
+   - Acesse: http://localhost/biblioteca/
+   - Você deve ver a página inicial com:
+     ✓ Menu de navegação
+     ✓ Cards com estatísticas
+     ✓ Últimos livros cadastrados
+     ✓ Top 5 livros mais emprestados
+
+================================================================================
+
+✅ VERIFICAÇÃO PÓS-INSTALAÇÃO:
+-------------------------------
+
+O sistema já vem com dados de exemplo. Verifique se aparecem:
+
+□ 10 Autores cadastrados (Machado de Assis, Clarice Lispector, etc.)
+□ 15 Livros no catálogo
+□ 5 Clientes cadastrados
+□ Alguns empréstimos ativos
+
+Se aparecer, a instalação foi bem-sucedida! 🎉
+
+================================================================================
+
+🔧 SOLUÇÃO DE PROBLEMAS COMUNS:
+--------------------------------
+
+❌ ERRO: "Erro na conexão com o banco de dados"
+   SOLUÇÃO:
+   1. Verifique se o MySQL está rodando no XAMPP/WAMP
+   2. Confirme usuário e senha em config/database.php
+   3. Certifique-se de que o banco "biblioteca" foi criado
+
+❌ ERRO: Página em branco
+   SOLUÇÃO:
+   1. Ative o modo debug em config/config.php:
+      define('DEBUG_MODE', true);
+   2. Recarregue a página para ver os erros
+   3. Verifique os logs do Apache em xampp/logs/
+
+❌ ERRO: "Call to undefined function..."
+   SOLUÇÃO:
+   1. Verifique se as extensões PHP estão habilitadas
+   2. Em xampp/php/php.ini, procure e descomente:
+      extension=pdo_mysql
+      extension=mysqli
+      extension=mbstring
+
+❌ ERRO: CSS não carrega / página sem estilo
+   SOLUÇÃO:
+   1. Verifique se você acessou: http://localhost/biblioteca/
+   2. Não acesse pelo caminho de arquivo (C:\xampp\...)
+   3. Sempre use localhost no navegador
+
+❌ ERRO: "Access denied for user..."
+   SOLUÇÃO:
+   1. Sua senha do MySQL não é vazia
+   2. Edite config/database.php
+   3. Coloque sua senha em: private $pass = "sua_senha_aqui";
+
+================================================================================
+
+📚 PRIMEIROS PASSOS NO SISTEMA:
+--------------------------------
+
+Após a instalação bem-sucedida:
+
+1️⃣ EXPLORE O DASHBOARD
+   - Na página inicial, veja as estatísticas
+   - Clique nos links para explorar cada seção
+
+2️⃣ TESTE O CADASTRO DE CLIENTE
+   - Menu: Clientes > Cadastrar Novo Cliente
+   - Preencha os dados obrigatórios
+   - Clique em "Cadastrar Cliente"
+   - Você verá uma mensagem de sucesso ✅
+
+3️⃣ TESTE O CADASTRO DE LIVRO
+   - Menu: Livros > Cadastrar Novo Livro
+   - Escolha um autor da lista
+   - Preencha título e quantidades
+   - Clique em "Cadastrar Livro"
+   - Mensagem de sucesso aparecerá ✅
+
+4️⃣ TESTE UM EMPRÉSTIMO
+   - Menu: Empréstimos > Registrar Novo Empréstimo
+   - Selecione um cliente
+   - Selecione um livro disponível
+   - Clique em "Registrar Empréstimo"
+   - Veja o resumo do empréstimo ✅
+
+5️⃣ TESTE A DEVOLUÇÃO
+   - Menu: Empréstimos
+   - Localize um empréstimo ativo
+   - Clique em "Devolver"
+   - Veja o cálculo de multa (se houver) ✅
+
+================================================================================
+
+⚙️ CONFIGURAÇÕES PERSONALIZÁVEIS:
+----------------------------------
+
+Você pode alterar as regras do sistema em: config/config.php
+
+📅 Prazo de empréstimo (padrão: 7 dias):
+   define('PRAZO_EMPRESTIMO_DIAS', 7);
+
+💰 Valor da multa por dia (padrão: R$ 2,50):
+   define('VALOR_MULTA_DIA', 2.50);
+
+📚 Limite de livros por cliente (padrão: 3):
+   define('LIMITE_EMPRESTIMOS_CLIENTE', 3);
+
+📄 Registros por página (padrão: 15):
+   define('REGISTROS_POR_PAGINA', 15);
+
+================================================================================
+
+📖 ESTRUTURA DE ARQUIVOS IMPORTANTES:
+--------------------------------------
+
+config/
+  ├── config.php          → Configurações gerais
+  └── database.php        → Conexão com banco
+
+includes/
+  ├── header.php          → Cabeçalho e menu
+  ├── footer.php          → Rodapé
+  └── funcoes.php         → Funções auxiliares
+
+Páginas principais:
+  ├── index.php           → Dashboard
+  ├── clientes.php        → Lista de clientes
+  ├── livros.php          → Catálogo de livros
+  ├── emprestimos.php     → Lista de empréstimos
+  └── autores.php         → Lista de autores
+
+================================================================================
+
+🎓 FUNCIONALIDADES DO SISTEMA:
+-------------------------------
+
+✅ Gerenciar Livros
+   • Cadastrar, editar, excluir livros
+   • Controle de estoque
+   • Filtros por título, autor, categoria
+   • Localização física na biblioteca
+
+✅ Gerenciar Clientes
+   • Cadastrar, editar, excluir clientes
+   • Status (Ativo, Inativo, Bloqueado)
+   • Histórico de empréstimos
+   • Validação de CPF e e-mail
+
+✅ Gerenciar Empréstimos
+   • Registrar empréstimos
+   • Validações automáticas
+   • Renovação de prazos
+   • Devolução com cálculo de multa
+   • Controle de atrasos
+
+✅ Gerenciar Autores
+   • Cadastrar autores
+   • Vincular livros
+   • Biografia e informações
+
+✅ Dashboard e Relatórios
+   • Estatísticas em tempo real
+   • Livros mais emprestados
+   • Alertas de atrasos
+   • Últimos cadastros
+
+================================================================================
+
+📞 SUPORTE E AJUDA:
+-------------------
+
+Se tiver problemas:
+
+1. Leia este guia completamente
+2. Consulte o arquivo README.md para documentação completa
+3. Revise os comentários no código-fonte
+4. Ative o modo DEBUG para ver erros detalhados
+5. Verifique os logs do Apache e MySQL
+
+================================================================================
+
+📌 INFORMAÇÕES IMPORTANTES:
+---------------------------
+
+⚠️ SEGURANÇA:
+   - Este sistema é para FINS EDUCACIONAIS
+   - NÃO use em produção sem implementar:
+     • Sistema de login/autenticação
+     • Criptografia de senhas
+     • HTTPS
+     • Proteções adicionais
+
+⚠️ DADOS DE EXEMPLO:
+   - O sistema vem com dados pré-cadastrados
+   - Use-os para testar o sistema
+   - Você pode limpar o banco e recomeçar quando quiser
+
+⚠️ BACKUP:
+   - Faça backup do banco de dados regularmente
+   - No phpMyAdmin: Selecione o banco > Exportar
+
+================================================================================
+
+✨ DICAS DE USO:
+----------------
+
+💡 Use os filtros nas listagens para encontrar registros rapidamente
+💡 Observe as mensagens de sucesso/erro após cada ação
+💡 O sistema bloqueia automaticamente clientes com atrasos
+💡 Livros com empréstimos ativos não podem ser excluídos
+💡 A quantidade disponível é atualizada automaticamente
+💡 Multas são calculadas automaticamente na devolução
+
+================================================================================
+
+🎉 PRONTO!
+----------
+
+Seu Sistema de Biblioteca está instalado e funcionando!
+
+Boa prática e bons estudos! 📚
+
+================================================================================
+Versão: 1.0.0
+Data: Novembro 2025
+Módulo 5 - Banco de Dados II
+================================================================================
