@@ -1,11 +1,15 @@
 <?php
-require_once 'config/database_pdo.php';
+// Inclui os arquivos necessários
+require_once 'config/database.php';
+require_once 'config/config.php';
+require_once 'includes/funcoes.php';
 require_once 'includes/header.php';
 
-$db = new DatabasePDO();
-$pdo = $db->getConexao();
+// Obtém a conexão com o banco
+$db = Database::getInstance();
+$pdo = $db->getConnection();
 
-$cliente_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$cliente_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
 if ($cliente_id > 0) {
     try {
@@ -19,7 +23,7 @@ if ($cliente_id > 0) {
             <h1>Editar Cliente</h1>
 
             <form method="POST" action="cliente_atualizar.php">
-                <input type="hidden" name="id" value="<?= $cliente['id'] ?>">
+                <input type="hidden" name="id" value="<?= htmlspecialchars($cliente['id']) ?>">
 
                 <div style="margin-bottom: 15px;">
                     <label for="nome">Nome Completo:</label><br>
@@ -42,7 +46,7 @@ if ($cliente_id > 0) {
                            required style="width: 100%; padding: 8px;">
                 </div>
 
-                <button type="submit" class="btn">Atualizar</button>
+                <button type="submit" class="btn btn-primary">Atualizar</button>
                 <a href="clientes.php" class="btn btn-warning">Cancelar</a>
             </form>
 <?php
@@ -50,7 +54,7 @@ if ($cliente_id > 0) {
             echo "<p>Cliente não encontrado.</p>";
         }
     } catch (PDOException $e) {
-        echo "<p style='color:red;'>Erro: " . $e->getMessage() . "</p>";
+        echo "<p style='color: red;'>Erro: " . $e->getMessage() . "</p>";
     }
 } else {
     echo "<p>ID inválido.</p>";

@@ -38,7 +38,7 @@ if ($emprestimo_id > 0) {
 
         $mensagem = "Empréstimo renovado! Nova data de devolução: " . date('d/m/Y', strtotime($nova_data));
 
-        header("Location: emprestimos.php?msg=renovado&detalhes=" . urlencode($mensagem));
+        header("Location: emprestimos.php?msg=Emprestimo Renovado!&detalhes=" . urlencode($mensagem));
         exit;
 
     } catch (Exception $e) {

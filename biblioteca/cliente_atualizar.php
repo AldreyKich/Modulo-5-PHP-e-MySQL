@@ -4,12 +4,17 @@ require_once 'config/database.php';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Receber dados do formulário
+    $id = isset($_POST['id']) ? (int) $_POST['id'] : 0;
     $nome = trim($_POST['nome']);
     $email = trim($_POST['email']);
     $telefone = trim($_POST['telefone']);
 
     // Validar dados
     $erros = [];
+
+    if ($id <= 0) {
+        $erros[] = "ID inválido para atualização.";
+    }
 
     if (empty($nome)) {
         $erros[] = "Nome é obrigatório.";
@@ -23,28 +28,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $erros[] = "Telefone é obrigatório.";
     }
 
-    // Se não houver erros, inserir no banco
+    // Se não houver erros, atualizar no banco
     if (empty($erros)) {
         try {
             $db = Database::getInstance();
             $pdo = $db->getConnection();
 
-            $sql = "INSERT INTO clientes (nome, email, telefone)
-                    VALUES (:nome, :email, :telefone)";
+            $sql = "UPDATE clientes 
+                    SET nome = :nome, email = :email, telefone = :telefone 
+                    WHERE id = :id";
 
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
+                'id' => $id,
                 'nome' => $nome,
                 'email' => $email,
                 'telefone' => $telefone
             ]);
 
             // Redirecionar com mensagem de sucesso
-            header("Location: clientes.php?msg=cadastrado");
+            header("Location: clientes.php?msg=atualizado");
             exit;
 
         } catch (PDOException $e) {
-            $erros[] = "Erro ao cadastrar: " . $e->getMessage();
+            $erros[] = "Erro ao atualizar: " . $e->getMessage();
         }
     }
 
@@ -57,12 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             echo "<li style='color:red;'>" . htmlspecialchars($erro) . "</li>";
         }
         echo "</ul>";
-        echo "<a href='cliente_novo.php' class='btn'>Voltar</a>";
+        echo "<a href='clientes.php' class='btn'>Voltar</a>";
         require_once 'includes/footer.php';
     }
 
 } else {
-    header("Location: cliente_novo.php");
+    header("Location: clientes.php");
     exit;
 }
 ?>
