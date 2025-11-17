@@ -1,15 +1,14 @@
 <?php
 /**
  * Listagem de Livros
- * 
- * Exibe o catálogo completo de livros com:
+ * * Exibe o catálogo completo de livros com:
  * - Filtros por título, autor e categoria
  * - Paginação
  * - Indicação de disponibilidade
  * - Ações de editar, excluir e emprestar
- * 
- * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * - EXIBIÇÃO DA CAPA DO LIVRO (NOVO)
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1 (Com Imagem de Capa)
  */
 
 require_once 'config/database.php';
@@ -19,6 +18,11 @@ require_once 'includes/header.php';
 
 $db = Database::getInstance();
 $pdo = $db->getConnection();
+
+// --- DEFINIÇÃO DO DIRETÓRIO DE CAPAS ---
+// Certifique-se de que esta constante ou variável aponte para o local correto
+// O caminho deve ser acessível via URL (Ex: /uploads/capas/livro.jpg)
+define('DIRETORIO_CAPAS', 'uploads/capas/'); // <<-- MODIFICAR AQUI SE NECESSÁRIO
 
 // ========================================
 // PAGINAÇÃO
@@ -119,10 +123,8 @@ try {
 
 ?>
 
-    <!-- Título da Página -->
     <h1>📚 Catálogo de Livros</h1>
 
-    <!-- Botão para cadastrar novo livro -->
     <div style="margin-bottom: 25px;">
         <a href="livro_novo.php" class="btn btn-success">
             ➕ Cadastrar Novo Livro
@@ -132,15 +134,11 @@ try {
         </a>
     </div>
 
-    <!-- ========================================
-         FORMULÁRIO DE FILTROS
-         ======================================== -->
     <div class="card">
         <h3>🔍 Filtros de Busca</h3>
         <form method="GET" action="livros.php" style="background: transparent; padding: 0;">
             
             <div class="row">
-                <!-- Busca por título -->
                 <div class="col">
                     <div class="form-group">
                         <label for="busca">Buscar por título:</label>
@@ -154,7 +152,6 @@ try {
                     </div>
                 </div>
                 
-                <!-- Filtro por autor -->
                 <div class="col">
                     <div class="form-group">
                         <label for="autor">Filtrar por autor:</label>
@@ -171,7 +168,6 @@ try {
             </div>
             
             <div class="row">
-                <!-- Filtro por categoria -->
                 <div class="col">
                     <div class="form-group">
                         <label for="categoria">Filtrar por categoria:</label>
@@ -186,7 +182,6 @@ try {
                     </div>
                 </div>
                 
-                <!-- Filtro por disponibilidade -->
                 <div class="col">
                     <div class="form-group">
                         <label for="disponivel">Disponibilidade:</label>
@@ -205,7 +200,6 @@ try {
         </form>
     </div>
 
-    <!-- Informação sobre resultados -->
     <p style="color: #666; margin: 20px 0;">
         <?php if ($total_registros > 0): ?>
             Exibindo <?= count($livros) ?> de <?= $total_registros ?> livro(s)
@@ -217,98 +211,95 @@ try {
         <?php endif; ?>
     </p>
 
-    <!-- ========================================
-         GRID/CARDS DE LIVROS
-         ======================================== -->
     <?php if (count($livros) > 0): ?>
         
-        <!-- View em Cards (opcional - mais visual) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
             <?php foreach ($livros as $livro): 
                 $disponivel = $livro['quantidade_disponivel'] > 0;
+                // --- Determina o caminho da imagem ou um placeholder ---
+                $caminho_capa = !empty($livro['capa_imagem']) 
+                    ? DIRETORIO_CAPAS . htmlspecialchars($livro['capa_imagem'])
+                    : 'assets/img/placeholder_livro.png'; // <<-- CRIE UM IMAGEM PADRÃO
             ?>
-                <div class="card" style="position: relative; <?= !$disponivel ? 'opacity: 0.7;' : '' ?>">
-                    <!-- Badge de disponibilidade -->
-                    <div style="position: absolute; top: 15px; right: 15px;">
-                        <?php if ($disponivel): ?>
-                            <span class="badge badge-success">
-                                ✓ Disponível
-                            </span>
-                        <?php else: ?>
-                            <span class="badge badge-danger">
-                                ✗ Indisponível
-                            </span>
-                        <?php endif; ?>
+                <div class="card" style="position: relative; overflow: hidden; display: flex; <?= !$disponivel ? 'opacity: 0.7;' : '' ?>">
+                    
+                    <div style="flex-shrink: 0; width: 100px; height: 150px; margin-right: 15px; border-radius: 4px; overflow: hidden;">
+                        <img 
+                            src="<?= $caminho_capa ?>" 
+                            alt="Capa do livro: <?= htmlspecialchars($livro['titulo']) ?>" 
+                            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                        >
                     </div>
                     
-                    <!-- Conteúdo do card -->
-                    <h3 style="margin: 0 0 10px 0; padding-right: 100px;">
-                        <?= htmlspecialchars($livro['titulo']) ?>
-                    </h3>
-                    
-                    <p style="color: #666; margin: 5px 0;">
-                        <strong>Autor:</strong> <?= htmlspecialchars($livro['autor_nome']) ?>
-                    </p>
-                    
-                    <?php if ($livro['ano_publicacao']): ?>
-                        <p style="color: #666; margin: 5px 0;">
-                            <strong>Ano:</strong> <?= $livro['ano_publicacao'] ?>
-                        </p>
-                    <?php endif; ?>
-                    
-                    <?php if ($livro['categoria']): ?>
-                        <p style="margin: 5px 0;">
-                            <span class="badge badge-info">
-                                <?= htmlspecialchars($livro['categoria']) ?>
-                            </span>
-                        </p>
-                    <?php endif; ?>
-                    
-                    <p style="color: #666; margin: 10px 0 5px 0;">
-                        <strong>Disponíveis:</strong> 
-                        <?= $livro['quantidade_disponivel'] ?> de <?= $livro['quantidade_total'] ?>
-                    </p>
-                    
-                    <?php if ($livro['localizacao']): ?>
-                        <p style="color: #999; font-size: 12px; margin: 5px 0;">
-                            📍 <?= htmlspecialchars($livro['localizacao']) ?>
-                        </p>
-                    <?php endif; ?>
-                    
-                    <p style="color: #999; font-size: 12px; margin: 5px 0;">
-                        📊 Total de empréstimos: <?= $livro['total_emprestimos'] ?>
-                    </p>
-                    
-                    <!-- Ações -->
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-                        <a href="livro_editar.php?id=<?= $livro['id'] ?>" 
-                           class="btn btn-warning btn-small">
-                            ✏️ Editar
-                        </a>
+                    <div style="flex-grow: 1;">
                         
-                        <?php if ($disponivel): ?>
-                            <a href="emprestimo_novo.php?livro_id=<?= $livro['id'] ?>" 
-                               class="btn btn-success btn-small">
-                                📋 Emprestar
-                            </a>
+                        <div style="position: absolute; top: 15px; right: 15px;">
+                            <?php if ($disponivel): ?>
+                                <span class="badge badge-success">
+                                    ✓ Disponível
+                                </span>
+                            <?php else: ?>
+                                <span class="badge badge-danger">
+                                    ✗ Indisponível
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <h3 style="margin: 0 0 5px 0; padding-right: 100px; font-size: 1.2em;">
+                            <?= htmlspecialchars($livro['titulo']) ?>
+                        </h3>
+                        
+                        <p style="color: #666; margin: 0 0 5px 0; font-size: 0.9em;">
+                            <strong>Autor:</strong> <?= htmlspecialchars($livro['autor_nome']) ?>
+                        </p>
+                        
+                        <?php if ($livro['categoria']): ?>
+                            <p style="margin: 5px 0;">
+                                <span class="badge badge-info" style="font-size: 0.8em;">
+                                    <?= htmlspecialchars($livro['categoria']) ?>
+                                </span>
+                            </p>
                         <?php endif; ?>
                         
-                        <a href="livro_excluir.php?id=<?= $livro['id'] ?>" 
-                           class="btn btn-danger btn-small confirm-delete">
-                            🗑️ Excluir
-                        </a>
+                        <p style="color: #666; margin: 10px 0 5px 0; font-size: 0.9em;">
+                            <strong>Disponíveis:</strong> 
+                            <?= $livro['quantidade_disponivel'] ?> de <?= $livro['quantidade_total'] ?>
+                        </p>
+                        
+                        <div style="margin-top: 10px; padding-top: 5px; border-top: 1px solid #e0e0e0;">
+                            <a href="livro_editar.php?id=<?= $livro['id'] ?>" 
+                               class="btn btn-warning btn-small">
+                                ✏️ Editar
+                            </a>
+                            
+                            <?php if ($disponivel): ?>
+                                <a href="emprestimo_novo.php?livro_id=<?= $livro['id'] ?>" 
+                                   class="btn btn-success btn-small">
+                                    📋 Emprestar
+                                </a>
+                            <?php endif; ?>
+                            
+                            <a href="livro_excluir.php?id=<?= $livro['id'] ?>" 
+                               class="btn btn-danger btn-small confirm-delete">
+                                🗑️ Excluir
+                            </a>
+                        </div>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <!-- ========================================
-             PAGINAÇÃO
-             ======================================== -->
         <?php if ($total_paginas > 1): ?>
             <div style="display: flex; justify-content: center; gap: 10px; margin: 30px 0;">
+                <?php 
+                // Função auxiliar para construir a URL de paginação, incluindo todos os filtros
+                function buildPaginationUrl($pagina, $busca, $autor, $categoria, $disponivel) {
+                    return "?pagina={$pagina}&busca=" . urlencode($busca) . "&autor={$autor}&categoria=" . urlencode($categoria) . "&disponivel={$disponivel}";
+                }
+                ?>
+
                 <?php if ($pagina_atual > 1): ?>
-                    <a href="?pagina=<?= $pagina_atual - 1 ?>&busca=<?= urlencode($filtro_busca) ?>&autor=<?= $filtro_autor ?>&categoria=<?= urlencode($filtro_categoria) ?>&disponivel=<?= $filtro_disponivel ?>" 
+                    <a href="<?= buildPaginationUrl($pagina_atual - 1, $filtro_busca, $filtro_autor, $filtro_categoria, $filtro_disponivel) ?>" 
                        class="btn btn-secondary btn-small">
                         « Anterior
                     </a>
@@ -318,7 +309,7 @@ try {
                     <?php if ($i == $pagina_atual): ?>
                         <span class="btn btn-small"><?= $i ?></span>
                     <?php else: ?>
-                        <a href="?pagina=<?= $i ?>&busca=<?= urlencode($filtro_busca) ?>&autor=<?= $filtro_autor ?>&categoria=<?= urlencode($filtro_categoria) ?>&disponivel=<?= $filtro_disponivel ?>" 
+                        <a href="<?= buildPaginationUrl($i, $filtro_busca, $filtro_autor, $filtro_categoria, $filtro_disponivel) ?>" 
                            class="btn btn-secondary btn-small">
                             <?= $i ?>
                         </a>
@@ -326,7 +317,7 @@ try {
                 <?php endfor; ?>
 
                 <?php if ($pagina_atual < $total_paginas): ?>
-                    <a href="?pagina=<?= $pagina_atual + 1 ?>&busca=<?= urlencode($filtro_busca) ?>&autor=<?= $filtro_autor ?>&categoria=<?= urlencode($filtro_categoria) ?>&disponivel=<?= $filtro_disponivel ?>" 
+                    <a href="<?= buildPaginationUrl($pagina_atual + 1, $filtro_busca, $filtro_autor, $filtro_categoria, $filtro_disponivel) ?>" 
                        class="btn btn-secondary btn-small">
                         Próxima »
                     </a>

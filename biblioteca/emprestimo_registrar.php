@@ -1,21 +1,23 @@
 <?php
 /**
  * Processa o Registro de Novo Empréstimo
- * 
- * Realiza validações e registra o empréstimo usando transação:
- * 1. Valida disponibilidade do livro
- * 2. Verifica limite de empréstimos do cliente
- * 3. Verifica se cliente tem atrasos
- * 4. Registra o empréstimo
- * 5. Atualiza estoque do livro
- * 
- * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * * Realiza validações e registra o empréstimo usando transação, e redireciona
+ * para a página de confirmação/impressão.
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1 (Com redirecionamento para Confirmação)
  */
 
 require_once 'config/database.php';
 require_once 'config/config.php';
 require_once 'includes/funcoes.php';
+
+// Define constantes que deveriam estar em config.php
+if (!defined('LIMITE_EMPRESTIMOS_CLIENTE')) define('LIMITE_EMPRESTIMOS_CLIENTE', 3);
+if (!defined('PRAZO_EMPRESTIMO_DIAS')) define('PRAZO_EMPRESTIMO_DIAS', 7);
+if (!defined('DEBUG_MODE')) define('DEBUG_MODE', false);
+if (!defined('MSG_SUCESSO')) define('MSG_SUCESSO', 'success');
+if (!defined('MSG_ERRO')) define('MSG_ERRO', 'danger');
+
 
 // ========================================
 // VERIFICA SE É POST
@@ -49,8 +51,6 @@ try {
     
     // ========================================
     // INICIAR TRANSAÇÃO
-    // Uma transação garante que TODAS as operações
-    // sejam executadas ou NENHUMA seja executada
     // ========================================
     $pdo->beginTransaction();
     
@@ -159,7 +159,6 @@ try {
     
     // ========================================
     // ATUALIZAR ESTOQUE DO LIVRO
-    // Diminui 1 unidade da quantidade disponível
     // ========================================
     $sql = "
         UPDATE livros 
@@ -171,28 +170,21 @@ try {
     
     // ========================================
     // CONFIRMAR TRANSAÇÃO
-    // Se chegou até aqui sem erros, confirma todas as operações
     // ========================================
     $pdo->commit();
     
     // ========================================
-    // SUCESSO - Monta mensagem detalhada
+    // SUCESSO - REDIRECIONAR PARA CONFIRMAÇÃO
     // ========================================
+    
     $mensagem = sprintf(
-        "Empréstimo #%d registrado com sucesso!<br>" .
-        "Cliente: %s<br>" .
-        "Livro: %s<br>" .
-        "Devolução prevista: %s<br>" .
-        "Prazo: %d dias",
+        "Empréstimo #%d registrado com sucesso! Devolução prevista: %s.",
         $emprestimo_id,
-        $cliente['nome'],
-        $livro['titulo'],
-        formatarData($data_devolucao),
-        PRAZO_EMPRESTIMO_DIAS
+        formatarData($data_devolucao)
     );
     
     redirecionarComMensagem(
-        'emprestimos.php',
+        "emprestimo_confirmacao.php?id={$emprestimo_id}",
         MSG_SUCESSO,
         $mensagem
     );
@@ -202,12 +194,10 @@ try {
     // ERRO - Desfaz TODAS as operações
     // ========================================
     
-    // Se estiver em uma transação, desfaz tudo
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
     
-    // Redireciona com mensagem de erro
     redirecionarComMensagem(
         'emprestimo_novo.php',
         MSG_ERRO,

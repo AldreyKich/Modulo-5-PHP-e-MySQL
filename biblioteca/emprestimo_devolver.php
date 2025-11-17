@@ -1,19 +1,22 @@
 <?php
 /**
  * Processa a Devolução de Empréstimo
- * 
- * Registra a devolução do livro:
+ * * Registra a devolução do livro:
  * 1. Calcula se há atraso e multa
  * 2. Atualiza o status do empréstimo
  * 3. Devolve o livro ao estoque
- * 
- * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1 (Redireciona para página de confirmação de devolução)
  */
 
 require_once 'config/database.php';
 require_once 'config/config.php';
 require_once 'includes/funcoes.php';
+
+// Definindo constantes de mensagem que são necessárias aqui
+if (!defined('MSG_SUCESSO')) define('MSG_SUCESSO', 'success');
+if (!defined('MSG_ERRO')) define('MSG_ERRO', 'danger');
+if (!defined('MSG_AVISO')) define('MSG_AVISO', 'warning'); // Adicionado para atraso/multa
 
 // ========================================
 // VERIFICAR ID DO EMPRÉSTIMO
@@ -110,42 +113,17 @@ try {
     $pdo->commit();
     
     // ========================================
-    // MONTAR MENSAGEM DE SUCESSO
+    // REDIRECIONAR PARA PÁGINA DE CONFIRMAÇÃO DE DEVOLUÇÃO
+    // O PDF será gerado a partir desta nova página.
     // ========================================
-    $mensagem = sprintf(
-        "✅ Devolução registrada com sucesso!<br><br>" .
-        "<strong>Empréstimo:</strong> #%d<br>" .
-        "<strong>Cliente:</strong> %s<br>" .
-        "<strong>Livro:</strong> %s<br>" .
-        "<strong>Data de Empréstimo:</strong> %s<br>" .
-        "<strong>Data de Devolução Prevista:</strong> %s<br>" .
-        "<strong>Data de Devolução Real:</strong> %s<br>",
-        $emprestimo_id,
-        $emprestimo['cliente_nome'],
-        $emprestimo['livro_titulo'],
-        formatarData($emprestimo['data_emprestimo']),
-        formatarData($emprestimo['data_devolucao_prevista']),
-        formatarData($data_atual)
-    );
     
-    // Adicionar informação sobre atraso/multa
-    if ($dias_atraso > 0) {
-        $mensagem .= sprintf(
-            "<strong style='color: #f44336;'>⚠️ Atraso:</strong> %d dia(s)<br>" .
-            "<strong style='color: #f44336;'>💰 Multa:</strong> %s<br>",
-            $dias_atraso,
-            formatarMoeda($multa)
-        );
-    } else {
-        $mensagem .= "<strong style='color: #4CAF50;'>✓ Devolução no prazo!</strong> Sem multa.";
-    }
+    // Se há atraso, muda o tipo da mensagem para aviso (cor laranja/vermelha)
+    $tipo_mensagem = $dias_atraso > 0 ? MSG_AVISO : MSG_SUCESSO;
     
-    redirecionarComMensagem(
-        'emprestimos.php',
-        $dias_atraso > 0 ? MSG_AVISO : MSG_SUCESSO,
-        $mensagem
-    );
-    
+    // Envia dados essenciais para a página de confirmação via URL
+    header("Location: emprestimo_devolucao_confirmacao.php?id={$emprestimo_id}&multa={$multa}&msg={$tipo_mensagem}");
+    exit;
+
 } catch (Exception $e) {
     // ========================================
     // ERRO - DESFAZER TRANSAÇÃO

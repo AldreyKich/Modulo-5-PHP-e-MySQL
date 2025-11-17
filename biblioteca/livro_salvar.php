@@ -1,171 +1,147 @@
 <?php
 /**
- * Script de processamento para salvar (INSERT) ou atualizar (UPDATE) um livro.
- * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * Processamento do Formulário de Cadastro de Novo Livro
+ * * Salva os dados do novo livro, incluindo o upload da capa, no acervo.
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1 (Com Upload de Imagem)
  */
 
-// Inclui os arquivos necessários
 require_once 'config/database.php';
 require_once 'config/config.php';
 require_once 'includes/funcoes.php';
 
-// Verifica se os dados foram enviados via POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    // Redireciona se a página for acessada diretamente sem POST
-    header("Location: livros.php");
-    exit();
+// Define o diretório de upload (ASSUMA que você definiu a constante DIRETORIO_CAPAS em config.php)
+// Exemplo: define('DIRETORIO_CAPAS', 'uploads/capas/');
+if (!defined('DIRETORIO_CAPAS')) {
+    // Definindo um valor padrão se não estiver em config.php (ajuste conforme a necessidade)
+    define('DIRETORIO_CAPAS', 'uploads/capas/'); 
 }
 
-// -------------------------------------------------------------------------
-// 1. OBTENÇÃO DA CONEXÃO
-// -------------------------------------------------------------------------
+$db = Database::getInstance();
+$pdo = $db->getConnection();
 
-try {
-    // Obtém a instância da conexão PDO
-    $conn = Database::getInstance()->getConnection();
-} catch (Exception $e) {
-    // Em caso de falha na conexão, loga o erro e interrompe
-    error_log("Erro de Conexão: " . $e->getMessage());
-    header("Location: erro.php?msg=Falha ao conectar ao banco de dados.");
-    exit();
-}
-
-// -------------------------------------------------------------------------
-// 2. COLETA, SANEAMENTO E VALIDAÇÃO
-// -------------------------------------------------------------------------
-
-// Variáveis de controle
-$livro_id = isset($_POST['id']) ? intval($_POST['id']) : 0;
-$acao = $livro_id > 0 ? 'edição' : 'cadastro';
-
-// Coleta e saneamento dos dados
-$titulo = trim($_POST['titulo'] ?? '');
-$autor_id = intval($_POST['autor_id'] ?? 0);
-$isbn = trim($_POST['isbn'] ?? null);
-$ano_publicacao = trim($_POST['ano_publicacao'] ?? null);
-$editora = trim($_POST['editora'] ?? null);
-$numero_paginas = intval($_POST['numero_paginas'] ?? 0);
-$categoria = trim($_POST['categoria'] ?? null);
-$localizacao = trim($_POST['localizacao'] ?? null);
-$quantidade_total = intval($_POST['quantidade_total'] ?? 0);
-$quantidade_disponivel = intval($_POST['quantidade_disponivel'] ?? 0);
-
-// Array para armazenar mensagens de erro
-$erros = [];
-
-// Validações
-if (empty($titulo)) {
-    $erros[] = "O título é obrigatório.";
-}
-if ($autor_id <= 0) {
-    $erros[] = "Selecione um autor válido.";
-}
-if ($quantidade_total < 1) {
-    $erros[] = "A quantidade total deve ser pelo menos 1.";
-}
-if ($quantidade_disponivel < 0) {
-    $erros[] = "A quantidade disponível não pode ser negativa.";
-}
-if ($quantidade_disponivel > $quantidade_total) {
-    $erros[] = "A quantidade disponível não pode ser maior que a quantidade total.";
-}
-
-// Se houver erros, redireciona de volta ao formulário
-if (!empty($erros)) {
-    // Monta a URL de retorno (para edição ou novo)
-    $redirecionamento_url = ($livro_id > 0) ? "livro_editar.php?id={$livro_id}" : "livro_novo.php";
-    $mensagem_erro_url = urlencode("❌ Erro de validação: " . implode('. ', $erros));
+// ===========================================
+// FUNÇÃO DE UPLOAD (Pode estar em includes/funcoes.php, mas está aqui para completude)
+// ===========================================
+function processarUploadCapa(array $file_array)
+{
+    $upload_dir = DIRETORIO_CAPAS;
     
-    // Redireciona com a mensagem de erro no parâmetro 'msg'
-    header("Location: {$redirecionamento_url}&msg={$mensagem_erro_url}");
-    exit();
-}
+    // Se o diretório não existir, tenta criar
+    if (!is_dir($upload_dir)) {
+        if (!mkdir($upload_dir, 0777, true)) {
+            exibirMensagem('erro', 'Falha ao criar o diretório de uploads. Verifique as permissões: ' . $upload_dir);
+            return false;
+        }
+    }
+    
+    // Configurações de segurança e validação
+    $max_size = 2 * 1024 * 1024; // 2 MB
+    $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp'];
 
-// Trata campos opcionais para serem NULL no banco de dados se vazios
-$ano_publicacao = empty($ano_publicacao) ? null : $ano_publicacao;
-$isbn = empty($isbn) ? null : $isbn;
-$editora = empty($editora) ? null : $editora;
-$categoria = empty($categoria) ? null : $categoria;
-$localizacao = empty($localizacao) ? null : $localizacao;
-// Garante que 0 páginas também seja NULL
-$numero_paginas = ($numero_paginas <= 0) ? null : $numero_paginas;
-
-// -------------------------------------------------------------------------
-// 3. MONTAGEM E EXECUÇÃO DA CONSULTA SQL
-// -------------------------------------------------------------------------
-
-try {
-    $conn->beginTransaction();
-
-    if ($acao === 'edição') {
-        // --- Operação de UPDATE (Edição) ---
-        $sql = "UPDATE livros SET 
-                    titulo = :titulo, 
-                    autor_id = :autor_id, 
-                    isbn = :isbn, 
-                    ano_publicacao = :ano_publicacao, 
-                    editora = :editora, 
-                    numero_paginas = :numero_paginas,
-                    categoria = :categoria, 
-                    localizacao = :localizacao, 
-                    quantidade_total = :quantidade_total, 
-                    quantidade_disponivel = :quantidade_disponivel
-                WHERE id = :id";
-        
-        $stmt = $conn->prepare($sql);
-        $stmt->bindParam(':id', $livro_id, PDO::PARAM_INT);
-        $mensagem_sucesso = "✅ Livro atualizado com sucesso!";
-
-    } else {
-        // --- Operação de INSERT (Novo Cadastro) ---
-        $sql = "INSERT INTO livros (
-                    titulo, autor_id, isbn, ano_publicacao, editora, numero_paginas, 
-                    categoria, localizacao, quantidade_total, quantidade_disponivel
-                ) VALUES (
-                    :titulo, :autor_id, :isbn, :ano_publicacao, :editora, :numero_paginas, 
-                    :categoria, :localizacao, :quantidade_total, :quantidade_disponivel
-                )";
-        
-        $stmt = $conn->prepare($sql);
-        $mensagem_sucesso = "✅ Livro cadastrado com sucesso!";
+    if ($file_array['error'] !== UPLOAD_ERR_OK) {
+        if ($file_array['error'] === UPLOAD_ERR_NO_FILE) {
+            return null; // Não foi enviado arquivo, retorna NULL
+        }
+        exibirMensagem('erro', 'Erro no upload do arquivo (código: ' . $file_array['error'] . ').');
+        return false;
     }
 
-    // Vinculação dos parâmetros comuns
-    $stmt->bindParam(':titulo', $titulo);
-    $stmt->bindParam(':autor_id', $autor_id, PDO::PARAM_INT);
-    $stmt->bindParam(':isbn', $isbn);
-    $stmt->bindParam(':ano_publicacao', $ano_publicacao);
-    $stmt->bindParam(':editora', $editora);
-    $stmt->bindParam(':numero_paginas', $numero_paginas, PDO::PARAM_INT);
-    $stmt->bindParam(':categoria', $categoria);
-    $stmt->bindParam(':localizacao', $localizacao);
-    $stmt->bindParam(':quantidade_total', $quantidade_total, PDO::PARAM_INT);
-    $stmt->bindParam(':quantidade_disponivel', $quantidade_disponivel, PDO::PARAM_INT);
+    if ($file_array['size'] > $max_size) {
+        exibirMensagem('erro', 'O arquivo é muito grande. Máximo permitido: 2MB.');
+        return false;
+    }
 
-    $stmt->execute();
-    
-    $conn->commit();
+    // Validação real do tipo de arquivo (MIME Type)
+    $mime_type = mime_content_type($file_array['tmp_name']);
+    if (!in_array($mime_type, $allowed_mimes)) {
+        exibirMensagem('erro', 'Tipo de arquivo não permitido. Use JPG, PNG ou WebP.');
+        return false;
+    }
 
-    // -------------------------------------------------------------------------
-    // 4. REDIRECIONAMENTO DE SUCESSO
-    // -------------------------------------------------------------------------
+    // Cria um nome de arquivo único e seguro
+    $ext = pathinfo($file_array['name'], PATHINFO_EXTENSION);
+    $nome_base = md5(uniqid(rand(), true));
+    $nome_final = $nome_base . '.' . $ext;
+    $caminho_final = $upload_dir . $nome_final;
+
+    // Move o arquivo para o destino
+    if (move_uploaded_file($file_array['tmp_name'], $caminho_final)) {
+        return $nome_final;
+    } else {
+        exibirMensagem('erro', 'Falha ao mover o arquivo de upload para o destino.');
+        return false;
+    }
+}
+// ===========================================
+
+
+// 1. Coleta e Limpeza de Dados do Formulário
+$titulo = limparInput($_POST['titulo'] ?? '');
+$autor_id = (int)($_POST['autor_id'] ?? 0);
+$isbn = limparInput($_POST['isbn'] ?? '');
+$ano_publicacao = limparInput($_POST['ano_publicacao'] ?? null);
+$editora = limparInput($_POST['editora'] ?? '');
+$numero_paginas = limparInput($_POST['numero_paginas'] ?? null);
+$quantidade_total = (int)($_POST['quantidade_total'] ?? 0);
+$quantidade_disponivel = (int)($_POST['quantidade_disponivel'] ?? 0);
+$categoria = limparInput($_POST['categoria'] ?? '');
+$localizacao = limparInput($_POST['localizacao'] ?? '');
+
+// 2. Validação Mínima (Embora o JS faça, o PHP é a validação de segurança)
+if (empty($titulo) || $autor_id <= 0 || $quantidade_total < 1 || $quantidade_disponivel < 0 || $quantidade_disponivel > $quantidade_total) {
+    exibirMensagem('erro', 'Dados obrigatórios inválidos ou faltando. Por favor, volte e verifique o formulário.');
+    // header('Location: livro_novo.php'); // Opcional: redirecionar de volta
+    exit;
+}
+
+// 3. Processamento do Upload da Capa
+$capa_nome = processarUploadCapa($_FILES['capa_imagem'] ?? []);
+
+if ($capa_nome === false) {
+    // Se o upload retornou FALSE, significa que houve um erro e a mensagem já foi exibida dentro da função.
+    exit; 
+}
+
+
+// 4. Inserção no Banco de Dados
+try {
+    $sql = "INSERT INTO livros 
+            (titulo, autor_id, isbn, ano_publicacao, editora, numero_paginas, 
+             quantidade_total, quantidade_disponivel, categoria, localizacao, capa_imagem, created_at) 
+            VALUES 
+            (:titulo, :autor_id, :isbn, :ano_publicacao, :editora, :numero_paginas, 
+             :quantidade_total, :quantidade_disponivel, :categoria, :localizacao, :capa_imagem, NOW())";
     
-    header("Location: livros.php?msg=" . urlencode($mensagem_sucesso));
-    exit();
+    $stmt = $pdo->prepare($sql);
+    
+    $stmt->execute([
+        'titulo' => $titulo,
+        'autor_id' => $autor_id,
+        'isbn' => empty($isbn) ? null : $isbn,
+        'ano_publicacao' => empty($ano_publicacao) ? null : (int)$ano_publicacao,
+        'editora' => empty($editora) ? null : $editora,
+        'numero_paginas' => empty($numero_paginas) ? null : (int)$numero_paginas,
+        'quantidade_total' => $quantidade_total,
+        'quantidade_disponivel' => $quantidade_disponivel,
+        'categoria' => empty($categoria) ? null : $categoria,
+        'localizacao' => empty($localizacao) ? null : $localizacao,
+        'capa_imagem' => $capa_nome, // Salva o nome do arquivo (ou NULL se não houve upload)
+    ]);
+    
+    // 5. Redirecionamento de Sucesso
+    exibirMensagem('sucesso', 'Livro "' . $titulo . '" cadastrado com sucesso! ID: ' . $pdo->lastInsertId());
+    header('Location: livros.php');
+    exit;
 
 } catch (PDOException $e) {
-    // Em caso de erro, desfaz as alterações
-    if ($conn->inTransaction()) {
-        $conn->rollBack();
+    // Se a inserção falhar, apaga o arquivo recém-upload para evitar lixo
+    if (!empty($capa_nome)) {
+        @unlink(DIRETORIO_CAPAS . $capa_nome); 
     }
-    
-    // Loga o erro detalhado
-    error_log("Erro durante a $acao do livro: " . $e->getMessage());
-
-    // Redireciona com mensagem de erro amigável
-    $mensagem_erro = "❌ Erro ao tentar realizar a $acao do livro. Tente novamente.";
-    header("Location: erro.php?msg=" . urlencode($mensagem_erro));
-    exit();
+    exibirMensagem('erro', 'Erro ao cadastrar livro no banco de dados: ' . $e->getMessage());
+    header('Location: livro_novo.php');
+    exit;
 }
+
 ?>

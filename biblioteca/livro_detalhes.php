@@ -1,10 +1,10 @@
 <?php
 /**
  * Exibe os detalhes completos de um livro específico do acervo.
- * Inclui informações sobre o livro e seu respectivo autor.
+ * Inclui informações sobre o livro e seu respectivo autor, AGORA COM A CAPA.
  *
  * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * @version 1.1 (Com Exibição de Capa)
  */
 
 // Inclui os arquivos necessários
@@ -15,6 +15,15 @@ require_once 'includes/header.php';
 
 $db = Database::getInstance();
 $pdo = $db->getConnection();
+
+// =======================================
+// NOVO: Define o caminho Web (URL) para exibir a imagem
+// (Assumindo que você definiu a constante DIRETORIO_CAPAS_URL em config.php ou em um local acessível)
+if (!defined('DIRETORIO_CAPAS_URL')) {
+    // Definindo um valor padrão se não estiver em config.php (AJUSTE CONFORME A NECESSIDADE)
+    define('DIRETORIO_CAPAS_URL', 'uploads/capas/'); 
+}
+// =======================================
 
 // -------------------------------------------------------------------------
 // 1. OBTENÇÃO E VALIDAÇÃO DO ID
@@ -56,6 +65,11 @@ try {
         exit;
     }
     
+    // NOVO: Define o caminho completo da capa para exibição
+    $capa_url = !empty($livro['capa_imagem']) 
+        ? DIRETORIO_CAPAS_URL . htmlspecialchars($livro['capa_imagem'])
+        : 'assets/img/placeholder_livro.png';
+        
     // -------------------------------------------------------------------------
     // 3. EXIBIÇÃO DOS DETALHES
     // -------------------------------------------------------------------------
@@ -65,53 +79,62 @@ try {
     📚 Detalhes do Livro: <?= htmlspecialchars($livro['titulo']) ?>
 </h1>
 
-<!-- Informações Básicas -->
-<div class="card" style="margin-bottom: 20px;">
-    <h3>📖 Informações Principais</h3>
-    <dl class="details-list">
-        <dt>Título:</dt>
-        <dd><?= htmlspecialchars($livro['titulo']) ?></dd>
-        
-        <dt>Autor:</dt>
-        <dd>
-            <a href="autor_detalhes.php?id=<?= $livro['autor_id'] ?>">
-                <?= htmlspecialchars($livro['nome_autor']) ?> 
-            </a>
-            <?php if ($livro['nacionalidade_autor']): ?>
-                (<?= htmlspecialchars($livro['nacionalidade_autor']) ?>)
-            <?php endif; ?>
-        </dd>
-        
-        <dt>ISBN:</dt>
-        <dd><?= !empty($livro['isbn']) ? htmlspecialchars($livro['isbn']) : 'N/A' ?></dd>
-        
-        <dt>Ano de Publicação:</dt>
-        <dd><?= !empty($livro['ano_publicacao']) ? htmlspecialchars($livro['ano_publicacao']) : 'N/A' ?></dd>
-        
-        <dt>Editora:</dt>
-        <dd><?= !empty($livro['editora']) ? htmlspecialchars($livro['editora']) : 'N/A' ?></dd>
-        
-        <dt>Número de Páginas:</dt>
-        <dd><?= !empty($livro['numero_paginas']) ? htmlspecialchars($livro['numero_paginas']) . ' pág.' : 'N/A' ?></dd>
-    </dl>
-</div>
+<div style="display: flex; gap: 30px; margin-bottom: 20px;">
+    
+    <div style="flex-shrink: 0; width: 200px;">
+        <div class="card" style="padding: 10px; text-align: center;">
+            <img src="<?= $capa_url ?>" alt="Capa do Livro: <?= htmlspecialchars($livro['titulo']) ?>" 
+                 style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
+        </div>
+    </div>
+    
+    <div style="flex-grow: 1;">
 
-<!-- Informações de Acervo e Localização -->
-<div class="card" style="margin-bottom: 20px;">
-    <h3>🏷️ Acervo e Localização</h3>
-    <dl class="details-list">
-        <dt>Categoria/Gênero:</dt>
-        <dd><?= !empty($livro['categoria']) ? htmlspecialchars($livro['categoria']) : 'Não Classificado' ?></dd>
-        
-        <dt>Localização:</dt>
-        <dd><?= !empty($livro['localizacao']) ? htmlspecialchars($livro['localizacao']) : 'Não Informada' ?></dd>
-    </dl>
-</div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>📖 Informações Principais</h3>
+            <dl class="details-list">
+                <dt>Título:</dt>
+                <dd><strong><?= htmlspecialchars($livro['titulo']) ?></strong></dd>
+                
+                <dt>Autor:</dt>
+                <dd>
+                    <a href="autor_detalhes.php?id=<?= $livro['autor_id'] ?>">
+                        <?= htmlspecialchars($livro['nome_autor']) ?> 
+                    </a>
+                    <?php if ($livro['nacionalidade_autor']): ?>
+                        (<?= htmlspecialchars($livro['nacionalidade_autor']) ?>)
+                    <?php endif; ?>
+                </dd>
+                
+                <dt>ISBN:</dt>
+                <dd><?= !empty($livro['isbn']) ? htmlspecialchars($livro['isbn']) : 'N/A' ?></dd>
+                
+                <dt>Ano de Publicação:</dt>
+                <dd><?= !empty($livro['ano_publicacao']) ? htmlspecialchars($livro['ano_publicacao']) : 'N/A' ?></dd>
+                
+                <dt>Editora:</dt>
+                <dd><?= !empty($livro['editora']) ? htmlspecialchars($livro['editora']) : 'N/A' ?></dd>
+                
+                <dt>Número de Páginas:</dt>
+                <dd><?= !empty($livro['numero_paginas']) ? htmlspecialchars($livro['numero_paginas']) . ' pág.' : 'N/A' ?></dd>
+            </dl>
+        </div>
 
-<!-- Informações de Estoque -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>🏷️ Acervo e Localização</h3>
+            <dl class="details-list">
+                <dt>Categoria/Gênero:</dt>
+                <dd><?= !empty($livro['categoria']) ? htmlspecialchars($livro['categoria']) : 'Não Classificado' ?></dd>
+                
+                <dt>Localização:</dt>
+                <dd><?= !empty($livro['localizacao']) ? htmlspecialchars($livro['localizacao']) : 'Não Informada' ?></dd>
+            </dl>
+        </div>
+    </div>
+</div>
 <div class="card" style="margin-bottom: 30px;">
     <h3>📊 Quantidade em Estoque</h3>
-    <dl class="details-list">
+    <dl class="details-list" style="grid-template-columns: 200px 1fr;">
         <dt>Total de Exemplares:</dt>
         <dd><?= htmlspecialchars($livro['quantidade_total']) ?></dd>
         
@@ -125,7 +148,6 @@ try {
     </dl>
 </div>
 
-<!-- Ações -->
 <div class="actions">
     <a href="livro_editar.php?id=<?= $livro['id'] ?>" class="btn btn-primary">
         ✏️ Editar Livro
@@ -138,13 +160,13 @@ try {
     </a>
 </div>
 
-<!-- Estilização simples para detalhes -->
 <style>
 .details-list {
+    /* Ajustado para centralizar as informações de texto dentro da coluna flex */
     display: grid;
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 180px 1fr; 
     gap: 10px 15px;
-    margin: 20px 0;
+    margin: 15px 0;
 }
 .details-list dt {
     font-weight: bold;

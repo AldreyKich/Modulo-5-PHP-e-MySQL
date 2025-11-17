@@ -1,16 +1,21 @@
 <?php
 /**
  * Página Inicial do Sistema de Biblioteca
- * 
- * Exibe:
+ * * * IMPORTANTE: Inclui o script de autenticação para proteger a página.
+ * * Exibe:
  * - Dashboard com estatísticas gerais
  * - Alertas de empréstimos atrasados
  * - Últimos livros cadastrados
  * - Top 5 livros mais emprestados
- * 
- * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1
  */
+
+// ************************************************
+// 1. INCLUSÃO DO CONTROLE DE ACESSO (O PRIMEIRO REQUISITO)
+// Se não estiver autenticado/autorizado, o usuário será redirecionado para login.php.
+// ************************************************
+require_once 'includes/autenticacao.php';
 
 // Inclui os arquivos necessários
 require_once 'config/database.php';
@@ -55,8 +60,8 @@ try {
     </p>
 
     <!-- ========================================
-         ALERTA DE EMPRÉSTIMOS ATRASADOS
-         ======================================== -->
+          ALERTA DE EMPRÉSTIMOS ATRASADOS
+          ======================================== -->
     <?php if ($stats['emprestimos_atrasados'] > 0): ?>
         <div class="alert alert-danger">
             <strong>⚠️ ATENÇÃO!</strong> 
@@ -68,8 +73,8 @@ try {
     <?php endif; ?>
 
     <!-- ========================================
-         CARDS DE ESTATÍSTICAS
-         ======================================== -->
+          CARDS DE ESTATÍSTICAS
+          ======================================== -->
     <div style="
         display: grid; 
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
@@ -158,8 +163,8 @@ try {
     </div>
 
     <!-- ========================================
-         AÇÕES RÁPIDAS
-         ======================================== -->
+          AÇÕES RÁPIDAS
+          ======================================== -->
     <div style="
         background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
         padding: 25px;
@@ -184,8 +189,8 @@ try {
     </div>
 
     <!-- ========================================
-         ÚLTIMOS LIVROS CADASTRADOS
-         ======================================== -->
+          ÚLTIMOS LIVROS CADASTRADOS
+          ======================================== -->
     <h2 style="margin-top: 40px;">📚 Últimos Livros Cadastrados</h2>
     
     <?php
@@ -253,8 +258,8 @@ try {
     <?php endif; ?>
 
     <!-- ========================================
-         TOP 5 LIVROS MAIS EMPRESTADOS
-         ======================================== -->
+          TOP 5 LIVROS MAIS EMPRESTADOS
+          ======================================== -->
     <h2 style="margin-top: 40px;">🏆 Top 5 Livros Mais Emprestados</h2>
     
     <?php

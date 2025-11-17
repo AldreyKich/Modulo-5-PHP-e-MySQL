@@ -1,4 +1,11 @@
 <?php
+/**
+ * Formulário de Edição de Livro
+ * * Permite editar um livro no acervo da biblioteca, incluindo a capa.
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1 (Com Edição de Imagem)
+ */
+
 require_once 'config/database.php';
 require_once 'config/config.php';
 require_once 'includes/funcoes.php';
@@ -6,6 +13,15 @@ require_once 'includes/header.php';
 
 $db = Database::getInstance();
 $pdo = $db->getConnection();
+
+// =======================================
+// Defina DIRETORIO_CAPAS se ainda não estiver em config.php
+// É o caminho web (URL) para exibir a imagem
+if (!defined('DIRETORIO_CAPAS_URL')) {
+    // Ajuste este caminho de acordo com sua configuração de URL
+    define('DIRETORIO_CAPAS_URL', 'uploads/capas/'); 
+}
+// =======================================
 
 // Obter o ID do livro
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -32,15 +48,55 @@ try {
     // Buscar autores
     $sqlAutores = "SELECT id, nome, nacionalidade FROM autores ORDER BY nome";
     $autores = $pdo->query($sqlAutores)->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Configura o caminho da capa para exibição
+    $caminho_capa = !empty($livro['capa_imagem']) 
+        ? DIRETORIO_CAPAS_URL . htmlspecialchars($livro['capa_imagem'])
+        : 'assets/img/placeholder_livro.png';
 ?>
 <h1>✏️ Editar Livro</h1>
 
-<form method="POST" action="livro_atualizar.php" id="formLivro">
+<form method="POST" action="livro_atualizar.php" id="formLivro" enctype="multipart/form-data">
     <input type="hidden" name="id" value="<?= $livro['id'] ?>">
+    <input type="hidden" name="capa_imagem_atual" value="<?= htmlspecialchars($livro['capa_imagem'] ?? '') ?>">
 
     <div class="card">
         <h3>📖 Informações Básicas</h3>
+        
+        <div class="form-group">
+            <label>Capa do Livro</label>
+            <div style="display: flex; align-items: flex-start; gap: 20px; margin-bottom: 15px;">
+                <div style="width: 100px; height: 150px; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; flex-shrink: 0;">
+                    <img src="<?= $caminho_capa ?>" alt="Capa Atual" 
+                         style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                
+                <div>
+                    <label for="capa_imagem" style="display: block; margin-bottom: 5px;">
+                        **Substituir/Enviar Nova Imagem:**
+                    </label>
+                    <input 
+                        type="file" 
+                        id="capa_imagem" 
+                        name="capa_imagem" 
+                        accept="image/jpeg, image/png, image/webp"
+                    >
+                    <small style="color: #999; display: block; margin-top: 5px;">
+                        Deixe vazio para manter a capa atual (máx. 2MB).
+                    </small>
 
+                    <?php if (!empty($livro['capa_imagem'])): ?>
+                        <div style="margin-top: 10px;">
+                            <input type="checkbox" id="remover_capa" name="remover_capa" value="1">
+                            <label for="remover_capa" style="color: #f44336; display: inline;">
+                                **Remover Capa Atual**
+                            </label>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        
         <div class="form-group">
             <label for="titulo">Título do Livro <span style="color:red">*</span></label>
             <input type="text" id="titulo" name="titulo" required maxlength="200"
@@ -142,9 +198,53 @@ try {
 </form>
 
 <script>
+/**
+ * Validação do formulário antes do envio
+ */
 document.getElementById('formLivro').addEventListener('submit', e => {
+    let erros = [];
+    
+    // Validação de quantidades (copiada de livro_novo.php para consistência)
+    const qtdTotal = parseInt(document.getElementById('quantidade_total').value) || 0;
+    const qtdDisponivel = parseInt(document.getElementById('quantidade_disponivel').value) || 0;
+    
+    if (qtdTotal < 1) {
+        erros.push('A quantidade total deve ser pelo menos 1.');
+    }
+    if (qtdDisponivel < 0) {
+        erros.push('A quantidade disponível não pode ser negativa.');
+    }
+    if (qtdDisponivel > qtdTotal) {
+        erros.push('A quantidade disponível não pode ser maior que a quantidade total!');
+    }
+    
+    // Validação da Capa de Imagem (Tamanho e Tipo)
+    const capaInput = document.getElementById('capa_imagem');
+    if (capaInput && capaInput.files.length > 0) {
+        const file = capaInput.files[0];
+        const maxSizeBytes = 2 * 1024 * 1024; // 2 MB
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (file.size > maxSizeBytes) {
+            erros.push('A nova imagem da capa é muito grande. O tamanho máximo permitido é 2MB.');
+        }
+
+        if (!allowedTypes.includes(file.type)) {
+            erros.push('Tipo de arquivo inválido para a capa. Use apenas JPG, PNG ou WebP.');
+        }
+    }
+    
+    // Se houver erros, previne o envio e exibe
+    if (erros.length > 0) {
+        e.preventDefault();
+        alert('❌ Por favor, corrija os seguintes erros antes de salvar:\n\n' + erros.join('\n'));
+        return false;
+    }
+    
+    // Confirmação final
     if (!confirm('💾 Deseja realmente salvar as alterações deste livro?')) {
         e.preventDefault();
+        return false;
     }
 });
 </script>

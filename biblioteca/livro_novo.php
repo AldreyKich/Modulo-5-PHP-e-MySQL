@@ -1,12 +1,10 @@
 <?php
 /**
  * Formulário de Cadastro de Novo Livro
- * 
- * Permite cadastrar um novo livro no acervo da biblioteca
+ * * Permite cadastrar um novo livro no acervo da biblioteca
  * com todas as informações necessárias.
- * 
- * @author Módulo 5 - Banco de Dados II
- * @version 1.0
+ * * @author Módulo 5 - Banco de Dados II
+ * @version 1.1 (Com Upload de Imagem)
  */
 
 require_once 'config/database.php';
@@ -32,7 +30,6 @@ try {
 </p>
 
 <?php if (count($autores) == 0): ?>
-    <!-- Alerta: Nenhum autor cadastrado -->
     <div class="alert alert-warning">
         <strong>⚠️ Nenhum autor cadastrado!</strong><br>
         Você precisa cadastrar pelo menos um autor antes de cadastrar livros.
@@ -42,16 +39,26 @@ try {
 
 <?php else: ?>
 
-<!-- Formulário de Cadastro -->
-<form method="POST" action="livro_salvar.php" id="formLivro">
+<form method="POST" action="livro_salvar.php" id="formLivro" enctype="multipart/form-data">
     
-    <!-- ========================================
-         INFORMAÇÕES BÁSICAS
-         ======================================== -->
     <div class="card">
         <h3>📖 Informações Básicas</h3>
         
-        <!-- Título -->
+        <div class="form-group">
+            <label for="capa_imagem">
+                Capa do Livro (Imagem)
+            </label>
+            <input 
+                type="file" 
+                id="capa_imagem" 
+                name="capa_imagem" 
+                accept="image/jpeg, image/png, image/webp"
+            >
+            <small style="color: #999;">
+                Envie uma imagem JPG, PNG ou WebP. Tamanho máximo recomendado: 2MB.
+            </small>
+        </div>
+        
         <div class="form-group">
             <label for="titulo">
                 Título do Livro <span style="color: red;">*</span>
@@ -71,7 +78,6 @@ try {
         </div>
         
         <div class="row">
-            <!-- Autor -->
             <div class="col">
                 <div class="form-group">
                     <label for="autor_id">
@@ -97,7 +103,6 @@ try {
                 </div>
             </div>
             
-            <!-- ISBN -->
             <div class="col">
                 <div class="form-group">
                     <label for="isbn">ISBN</label>
@@ -116,7 +121,6 @@ try {
         </div>
         
         <div class="row">
-            <!-- Ano de Publicação -->
             <div class="col">
                 <div class="form-group">
                     <label for="ano_publicacao">Ano de Publicação</label>
@@ -134,7 +138,6 @@ try {
                 </div>
             </div>
             
-            <!-- Editora -->
             <div class="col">
                 <div class="form-group">
                     <label for="editora">Editora</label>
@@ -151,7 +154,6 @@ try {
                 </div>
             </div>
             
-            <!-- Número de Páginas -->
             <div class="col">
                 <div class="form-group">
                     <label for="numero_paginas">Número de Páginas</label>
@@ -167,14 +169,10 @@ try {
         </div>
     </div>
     
-    <!-- ========================================
-         CLASSIFICAÇÃO
-         ======================================== -->
     <div class="card">
         <h3>🏷️ Classificação</h3>
         
         <div class="row">
-            <!-- Categoria -->
             <div class="col">
                 <div class="form-group">
                     <label for="categoria">Categoria/Gênero</label>
@@ -203,7 +201,6 @@ try {
                 </div>
             </div>
             
-            <!-- Localização -->
             <div class="col">
                 <div class="form-group">
                     <label for="localizacao">Localização na Biblioteca</label>
@@ -222,14 +219,10 @@ try {
         </div>
     </div>
     
-    <!-- ========================================
-         QUANTIDADE DE EXEMPLARES
-         ======================================== -->
     <div class="card">
         <h3>📊 Quantidade de Exemplares</h3>
         
         <div class="row">
-            <!-- Quantidade Total -->
             <div class="col">
                 <div class="form-group">
                     <label for="quantidade_total">
@@ -250,7 +243,6 @@ try {
                 </div>
             </div>
             
-            <!-- Quantidade Disponível -->
             <div class="col">
                 <div class="form-group">
                     <label for="quantidade_disponivel">
@@ -272,7 +264,6 @@ try {
             </div>
         </div>
         
-        <!-- Alerta informativo -->
         <div class="alert alert-info" style="margin-top: 15px;">
             <strong>ℹ️ Atenção:</strong> 
             <ul style="margin: 10px 0 0 20px;">
@@ -283,9 +274,6 @@ try {
         </div>
     </div>
     
-    <!-- ========================================
-         EXEMPLOS DE PREENCHIMENTO
-         ======================================== -->
     <div class="card" style="background: #f9f9f9; border: 2px dashed #ccc;">
         <h3 style="color: #667eea;">💡 Exemplos de Livros Famosos</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
@@ -310,9 +298,6 @@ try {
         </div>
     </div>
     
-    <!-- ========================================
-         BOTÕES DE AÇÃO
-         ======================================== -->
     <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
         <button type="submit" class="btn btn-success">
             ✅ Cadastrar Livro
@@ -328,9 +313,6 @@ try {
     </div>
 </form>
 
-<!-- ========================================
-     JAVASCRIPT PARA VALIDAÇÕES E INTERATIVIDADE
-     ======================================== -->
 <script>
 /**
  * Validação do formulário antes do envio
@@ -372,6 +354,22 @@ document.getElementById('formLivro').addEventListener('submit', function(e) {
         const anoAtual = new Date().getFullYear();
         if (ano < 1000 || ano > anoAtual) {
             erros.push('Ano de publicação inválido. Deve estar entre 1000 e ' + anoAtual);
+        }
+    }
+    
+    // NOVO: Validação da Capa de Imagem (Tamanho e Tipo)
+    const capaInput = document.getElementById('capa_imagem');
+    if (capaInput && capaInput.files.length > 0) {
+        const file = capaInput.files[0];
+        const maxSizeBytes = 2 * 1024 * 1024; // 2 MB
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+
+        if (file.size > maxSizeBytes) {
+            erros.push('A imagem da capa é muito grande. O tamanho máximo permitido é 2MB.');
+        }
+
+        if (!allowedTypes.includes(file.type)) {
+            erros.push('Tipo de arquivo inválido para a capa. Use apenas JPG, PNG ou WebP.');
         }
     }
     
